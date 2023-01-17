@@ -3,36 +3,45 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Facebook\WebDriver\Remote\RemoteWebDriver;
 use Facebook\WebDriver\WebDriverBy;
 use Facebook\WebDriver\WebDriverExpectedCondition;
-use Facebook\WebDriver\Remote\DesiredCapabilities;
+use Facebook\WebDriver\WebDriverWait;
+use Illuminate\Support\Js;
 
 class ScrapeController extends Controller
 {
-    public function test() 
+    public function scrape() 
     {
-        $serverUrl = 'http://localhost:4444';
-        $desiredCapabilities = DesiredCapabilities::chrome();
-        $desiredCapabilities->setCapability('acceptSslCerts', false);
+        //Go to URL
+        $this->webDriver->get($this->url);
 
-        
-        $driver = RemoteWebDriver::create($serverUrl, $desiredCapabilities);
-        $driver->manage()->window()->maximize();
+        $wait = new WebDriverWait($this->webDriver, 10);
 
-        // Go to URL
-        $driver->get('https://eservices.corangamite.vic.gov.au/T1PRProd/WebApps/eProperty/P1/eTrack/eTrackApplicationSearch.aspx?r=CSC.WEBGUEST&f=%24P1.ETR.SEARCH.ENQ');
+        $dateFrom = $wait->until(WebDriverExpectedCondition::presenceOfElementLocated(WebDriverBy::xpath("(//label[text()='Date From']/following::input)[1]")))->sendKeys('02/01/2023');
+        $dateTo = $wait->until(WebDriverExpectedCondition::presenceOfElementLocated(WebDriverBy::xpath("(//label[text()='Date To']/following::input)[1]")))->sendKeys('16/01/2023');
+        $searchBtn = $wait->until(WebDriverExpectedCondition::elementToBeClickable(WebDriverBy::xpath("(//input[@class='SearchButton'])[2]")))->click();
+        $tableRows = $wait->until(WebDriverExpectedCondition::presenceOfAllElementsLocatedBy(WebDriverBy::xpath("//table[@cellpadding='3']//tr")));
 
-        // Find search element by its id, write 'PHP' inside and submit
-        $driver->findElement(WebDriverBy::xpath("(//input[@class='textField'])[1]")) // find search input element
-            ->sendKeys('02/01/2023'); // fill the search box
-        $driver->findElement(WebDriverBy::xpath("(//input[@class='textField'])[2]")) // find search input element
-            ->sendKeys('16/01/2023'); // fill the search box
+        //Array results of all table rows
+        $permitResultsArray = array();
 
-        // Make sure to always call quit() at the end to terminate the browser session
-        $driver->findElement(WebDriverBy::xpath("(//input[@class='SearchButton'])[2]"))->click();
-        $driver->quit();
+        for($i = 2; $i <= count($tableRows); $i++) {
+            $elements = $this->webDriver->findElements(WebDriverBy::xpath("(//table[@cellpadding='3']//tr)". "[" . $i . "]/td"));
+            
+            // Array of data per row
+            $rowData = array();
+            $rowData["Application"] = $elements[0]->getText();
+            $rowData["Lodged"] = $elements[1]->getText();
+            $rowData["Formatted Address"] = $elements[2]->getText();
+            $rowData["Description"] = $elements[3]->getText();
+            $permitResultsArray[] = $rowData;
+        }
 
-        // $driver->quit();
+        $jsonPermitResult = json_encode($permitResultsArray);
+
+        echo $jsonPermitResult;
+
+
+        $this->webDriver->quit();
     }
 }
