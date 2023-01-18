@@ -24,7 +24,7 @@ class ScrapeController extends Controller
         
         //call get table data then echo json result
         $tableData = $this->getTableData($wait);
-        echo $tableData;
+        echo "<pre>" . $tableData . "</pre>";
 
         $this->webDriver->quit();
     }
@@ -49,7 +49,7 @@ class ScrapeController extends Controller
             $permitResultsArray[] = $rowData;
         }
 
-        return json_encode($permitResultsArray);
+        return json_encode($permitResultsArray, JSON_PRETTY_PRINT);
     }
 
     public function fillDateTo($wait ,$date) {
