@@ -18,4 +18,4 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/webdriver/test', [ScrapeController::class,'scrape']);
+Route::get('/landchecker/scrape', [ScrapeController::class,'scrape']);
